@@ -1,0 +1,1641 @@
+{
+  "uid": "steam-playtime",
+  "title": "Steam playtime",
+  "description": "Every recorded Steam session, every account and device (github.com/QuinnBast/Playlog).",
+  "tags": [
+    "steam",
+    "games"
+  ],
+  "timezone": "browser",
+  "editable": true,
+  "graphTooltip": 1,
+  "refresh": "1m",
+  "schemaVersion": 39,
+  "time": {
+    "from": "now-30d",
+    "to": "now"
+  },
+  "links": [
+    {
+      "title": "All sessions (timeline)",
+      "type": "link",
+      "url": "/d/steam-sessions",
+      "icon": "dashboard",
+      "keepTime": true,
+      "includeVars": true,
+      "targetBlank": false,
+      "asDropdown": false,
+      "tags": [],
+      "tooltip": ""
+    }
+  ],
+  "templating": {
+    "list": [
+      {
+        "name": "account",
+        "label": "Account",
+        "type": "query",
+        "datasource": {
+          "type": "grafana-postgresql-datasource",
+          "uid": "steam-playtime"
+        },
+        "query": "SELECT display_name FROM accounts UNION SELECT account FROM v_lifetime_totals UNION SELECT account FROM v_playtime ORDER BY 1",
+        "definition": "SELECT display_name FROM accounts UNION SELECT account FROM v_lifetime_totals UNION SELECT account FROM v_playtime ORDER BY 1",
+        "multi": true,
+        "includeAll": true,
+        "current": {
+          "text": "All",
+          "value": "$__all"
+        },
+        "refresh": 1,
+        "sort": 1
+      },
+      {
+        "name": "bucket",
+        "label": "Group by",
+        "type": "custom",
+        "query": "day,week,month",
+        "current": {
+          "text": "day",
+          "value": "day"
+        },
+        "options": [
+          {
+            "text": "day",
+            "value": "day",
+            "selected": true
+          },
+          {
+            "text": "week",
+            "value": "week",
+            "selected": false
+          },
+          {
+            "text": "month",
+            "value": "month",
+            "selected": false
+          }
+        ]
+      }
+    ]
+  },
+  "panels": [
+    {
+      "id": 1,
+      "type": "stat",
+      "title": "Hours played",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "steam-playtime"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 0,
+        "w": 4,
+        "h": 4
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "steam-playtime"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT COALESCE(round(sum(seconds) / 3600.0, 1), 0) AS hours FROM v_playtime WHERE $__timeFilter(at) AND account IN ($account)"
+        }
+      ],
+      "description": "Tracked sessions plus untracked time (\"other\": Steam counted it, no agent recorded it).",
+      "fieldConfig": {
+        "defaults": {
+          "unit": "suffix: h",
+          "decimals": 1,
+          "color": {
+            "mode": "fixed",
+            "fixedColor": "text"
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "colorMode": "none",
+        "graphMode": "none",
+        "textMode": "value",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "wideLayout": true,
+        "showPercentChange": false
+      }
+    },
+    {
+      "id": 2,
+      "type": "stat",
+      "title": "Sessions",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "steam-playtime"
+      },
+      "gridPos": {
+        "x": 4,
+        "y": 0,
+        "w": 3,
+        "h": 4
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "steam-playtime"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT count(*) FROM v_sessions WHERE $__timeFilter(started_at) AND account IN ($account)"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "none",
+          "decimals": 0,
+          "color": {
+            "mode": "fixed",
+            "fixedColor": "text"
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "colorMode": "none",
+        "graphMode": "none",
+        "textMode": "value",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "wideLayout": true,
+        "showPercentChange": false
+      }
+    },
+    {
+      "id": 3,
+      "type": "stat",
+      "title": "Longest session",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "steam-playtime"
+      },
+      "gridPos": {
+        "x": 7,
+        "y": 0,
+        "w": 4,
+        "h": 4
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "steam-playtime"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT COALESCE(max(seconds), 0) / 3600.0 FROM v_sessions WHERE $__timeFilter(started_at) AND account IN ($account)"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "suffix: h",
+          "decimals": 1,
+          "color": {
+            "mode": "fixed",
+            "fixedColor": "text"
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "colorMode": "none",
+        "graphMode": "none",
+        "textMode": "value",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "wideLayout": true,
+        "showPercentChange": false
+      }
+    },
+    {
+      "id": 4,
+      "type": "stat",
+      "title": "Current streak",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "steam-playtime"
+      },
+      "gridPos": {
+        "x": 11,
+        "y": 0,
+        "w": 4,
+        "h": 4
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "steam-playtime"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "WITH days AS (SELECT DISTINCT (at AT TIME ZONE (SELECT timezone FROM settings))::date AS d FROM v_playtime WHERE tracked AND account IN ($account)), g AS (SELECT d, d - (row_number() OVER (ORDER BY d))::int AS grp FROM days) SELECT CASE WHEN max(d) >= (now() AT TIME ZONE (SELECT timezone FROM settings))::date - 1 THEN count(*) ELSE 0 END FROM g WHERE grp = (SELECT grp FROM g ORDER BY d DESC LIMIT 1)"
+        }
+      ],
+      "description": "Consecutive days with a tracked session, up to today or yesterday.",
+      "fieldConfig": {
+        "defaults": {
+          "unit": "suffix:  days",
+          "decimals": 0,
+          "color": {
+            "mode": "fixed",
+            "fixedColor": "text"
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "colorMode": "none",
+        "graphMode": "none",
+        "textMode": "value",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "wideLayout": true,
+        "showPercentChange": false
+      }
+    },
+    {
+      "id": 5,
+      "type": "stat",
+      "title": "Longest streak",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "steam-playtime"
+      },
+      "gridPos": {
+        "x": 15,
+        "y": 0,
+        "w": 4,
+        "h": 4
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "steam-playtime"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "WITH days AS (SELECT DISTINCT (at AT TIME ZONE (SELECT timezone FROM settings))::date AS d FROM v_playtime WHERE tracked AND account IN ($account)), g AS (SELECT d, d - (row_number() OVER (ORDER BY d))::int AS grp FROM days) SELECT COALESCE(max(c), 0) FROM (SELECT count(*) AS c FROM g GROUP BY grp) s"
+        }
+      ],
+      "description": "All time, not just the selected range.",
+      "fieldConfig": {
+        "defaults": {
+          "unit": "suffix:  days",
+          "decimals": 0,
+          "color": {
+            "mode": "fixed",
+            "fixedColor": "text"
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "colorMode": "none",
+        "graphMode": "none",
+        "textMode": "value",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "wideLayout": true,
+        "showPercentChange": false
+      }
+    },
+    {
+      "id": 6,
+      "type": "stat",
+      "title": "Now playing",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "steam-playtime"
+      },
+      "gridPos": {
+        "x": 19,
+        "y": 0,
+        "w": 5,
+        "h": 4
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "steam-playtime"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT COALESCE(string_agg(COALESCE(a.display_name, d.current_account_id::text) || ': ' || COALESCE(g.name, 'App ' || d.current_app_id) || ' (' || d.name || ')', ' \u00b7 '), 'Nothing') AS now FROM devices d LEFT JOIN accounts a ON a.account_id = d.current_account_id LEFT JOIN games g ON g.app_id = d.current_app_id WHERE d.current_app_id IS NOT NULL AND d.last_seen_at > now() - interval '3 minutes'"
+        }
+      ],
+      "description": "Live from the agents (updated every minute while the device can reach the server).",
+      "fieldConfig": {
+        "defaults": {
+          "unit": "none",
+          "decimals": 0,
+          "color": {
+            "mode": "fixed",
+            "fixedColor": "text"
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "/.*/",
+          "values": false
+        },
+        "colorMode": "none",
+        "graphMode": "none",
+        "textMode": "value",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "wideLayout": true,
+        "showPercentChange": false,
+        "text": {
+          "valueSize": 26
+        }
+      }
+    },
+    {
+      "id": 7,
+      "type": "heatmap",
+      "title": "Days played",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "steam-playtime"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 53,
+        "w": 24,
+        "h": 7
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "steam-playtime"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT w.week AT TIME ZONE (SELECT timezone FROM settings) AS time, round(COALESCE(sum(s.seconds) FILTER (WHERE EXTRACT(ISODOW FROM s.local_hour) = 7), 0) / 3600.0, 2) AS \"Sun\", round(COALESCE(sum(s.seconds) FILTER (WHERE EXTRACT(ISODOW FROM s.local_hour) = 6), 0) / 3600.0, 2) AS \"Sat\", round(COALESCE(sum(s.seconds) FILTER (WHERE EXTRACT(ISODOW FROM s.local_hour) = 5), 0) / 3600.0, 2) AS \"Fri\", round(COALESCE(sum(s.seconds) FILTER (WHERE EXTRACT(ISODOW FROM s.local_hour) = 4), 0) / 3600.0, 2) AS \"Thu\", round(COALESCE(sum(s.seconds) FILTER (WHERE EXTRACT(ISODOW FROM s.local_hour) = 3), 0) / 3600.0, 2) AS \"Wed\", round(COALESCE(sum(s.seconds) FILTER (WHERE EXTRACT(ISODOW FROM s.local_hour) = 2), 0) / 3600.0, 2) AS \"Tue\", round(COALESCE(sum(s.seconds) FILTER (WHERE EXTRACT(ISODOW FROM s.local_hour) = 1), 0) / 3600.0, 2) AS \"Mon\" FROM generate_series(date_trunc('week', $__timeFrom() AT TIME ZONE (SELECT timezone FROM settings)), $__timeTo() AT TIME ZONE (SELECT timezone FROM settings), interval '1 week') AS w (week) LEFT JOIN v_session_hours s ON date_trunc('week', s.local_hour) = w.week AND $__timeFilter(s.hour) AND s.account IN ($account) GROUP BY w.week ORDER BY w.week"
+        }
+      ],
+      "description": "Hours of tracked play per day over the last year, one column per week (like GitHub's contribution graph). Not limited by the time range.",
+      "timeFrom": "1y",
+      "fieldConfig": {
+        "defaults": {
+          "unit": "suffix: h",
+          "decimals": 1
+        },
+        "overrides": []
+      },
+      "options": {
+        "calculate": false,
+        "cellGap": 2,
+        "cellValues": {
+          "unit": "suffix: h",
+          "decimals": 1
+        },
+        "color": {
+          "mode": "opacity",
+          "fill": "#39d353",
+          "scale": "exponential",
+          "exponent": 0.6,
+          "min": 0,
+          "steps": 64
+        },
+        "yAxis": {
+          "axisPlacement": "left",
+          "reverse": false
+        },
+        "rowsFrame": {
+          "layout": "unknown"
+        },
+        "showValue": "never",
+        "legend": {
+          "show": true
+        },
+        "tooltip": {
+          "mode": "single",
+          "yHistogram": false,
+          "showColorScale": false
+        },
+        "exemplars": {
+          "color": "transparent"
+        },
+        "filterValues": {
+          "le": 0.01
+        }
+      }
+    },
+    {
+      "id": 8,
+      "type": "table",
+      "title": "Total hours by weekday \u00d7 hour of day",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "steam-playtime"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 60,
+        "w": 24,
+        "h": 10
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "steam-playtime"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT d.label AS \"Day\", round(COALESCE(sum(s.seconds) FILTER (WHERE EXTRACT(HOUR FROM s.local_hour) = 0), 0) / 3600.0, 1) AS \"00\", round(COALESCE(sum(s.seconds) FILTER (WHERE EXTRACT(HOUR FROM s.local_hour) = 1), 0) / 3600.0, 1) AS \"01\", round(COALESCE(sum(s.seconds) FILTER (WHERE EXTRACT(HOUR FROM s.local_hour) = 2), 0) / 3600.0, 1) AS \"02\", round(COALESCE(sum(s.seconds) FILTER (WHERE EXTRACT(HOUR FROM s.local_hour) = 3), 0) / 3600.0, 1) AS \"03\", round(COALESCE(sum(s.seconds) FILTER (WHERE EXTRACT(HOUR FROM s.local_hour) = 4), 0) / 3600.0, 1) AS \"04\", round(COALESCE(sum(s.seconds) FILTER (WHERE EXTRACT(HOUR FROM s.local_hour) = 5), 0) / 3600.0, 1) AS \"05\", round(COALESCE(sum(s.seconds) FILTER (WHERE EXTRACT(HOUR FROM s.local_hour) = 6), 0) / 3600.0, 1) AS \"06\", round(COALESCE(sum(s.seconds) FILTER (WHERE EXTRACT(HOUR FROM s.local_hour) = 7), 0) / 3600.0, 1) AS \"07\", round(COALESCE(sum(s.seconds) FILTER (WHERE EXTRACT(HOUR FROM s.local_hour) = 8), 0) / 3600.0, 1) AS \"08\", round(COALESCE(sum(s.seconds) FILTER (WHERE EXTRACT(HOUR FROM s.local_hour) = 9), 0) / 3600.0, 1) AS \"09\", round(COALESCE(sum(s.seconds) FILTER (WHERE EXTRACT(HOUR FROM s.local_hour) = 10), 0) / 3600.0, 1) AS \"10\", round(COALESCE(sum(s.seconds) FILTER (WHERE EXTRACT(HOUR FROM s.local_hour) = 11), 0) / 3600.0, 1) AS \"11\", round(COALESCE(sum(s.seconds) FILTER (WHERE EXTRACT(HOUR FROM s.local_hour) = 12), 0) / 3600.0, 1) AS \"12\", round(COALESCE(sum(s.seconds) FILTER (WHERE EXTRACT(HOUR FROM s.local_hour) = 13), 0) / 3600.0, 1) AS \"13\", round(COALESCE(sum(s.seconds) FILTER (WHERE EXTRACT(HOUR FROM s.local_hour) = 14), 0) / 3600.0, 1) AS \"14\", round(COALESCE(sum(s.seconds) FILTER (WHERE EXTRACT(HOUR FROM s.local_hour) = 15), 0) / 3600.0, 1) AS \"15\", round(COALESCE(sum(s.seconds) FILTER (WHERE EXTRACT(HOUR FROM s.local_hour) = 16), 0) / 3600.0, 1) AS \"16\", round(COALESCE(sum(s.seconds) FILTER (WHERE EXTRACT(HOUR FROM s.local_hour) = 17), 0) / 3600.0, 1) AS \"17\", round(COALESCE(sum(s.seconds) FILTER (WHERE EXTRACT(HOUR FROM s.local_hour) = 18), 0) / 3600.0, 1) AS \"18\", round(COALESCE(sum(s.seconds) FILTER (WHERE EXTRACT(HOUR FROM s.local_hour) = 19), 0) / 3600.0, 1) AS \"19\", round(COALESCE(sum(s.seconds) FILTER (WHERE EXTRACT(HOUR FROM s.local_hour) = 20), 0) / 3600.0, 1) AS \"20\", round(COALESCE(sum(s.seconds) FILTER (WHERE EXTRACT(HOUR FROM s.local_hour) = 21), 0) / 3600.0, 1) AS \"21\", round(COALESCE(sum(s.seconds) FILTER (WHERE EXTRACT(HOUR FROM s.local_hour) = 22), 0) / 3600.0, 1) AS \"22\", round(COALESCE(sum(s.seconds) FILTER (WHERE EXTRACT(HOUR FROM s.local_hour) = 23), 0) / 3600.0, 1) AS \"23\" FROM (VALUES (1, 'Mon'), (2, 'Tue'), (3, 'Wed'), (4, 'Thu'), (5, 'Fri'), (6, 'Sat'), (7, 'Sun')) AS d (dow, label) LEFT JOIN v_session_hours s ON EXTRACT(ISODOW FROM s.local_hour) = d.dow AND $__timeFilter(s.hour) AND s.account IN ($account) GROUP BY d.dow, d.label ORDER BY d.dow"
+        }
+      ],
+      "description": "Each cell: total hours of tracked play in that clock hour (local time) on that weekday, added up over the whole selected range - e.g. Thu / 21 = all play between 21:00 and 22:00 on every Thursday in the range. A session counts in every hour it covers.",
+      "fieldConfig": {
+        "defaults": {
+          "unit": "none",
+          "decimals": 1,
+          "min": 0,
+          "color": {
+            "mode": "continuous-greens"
+          },
+          "custom": {
+            "align": "center",
+            "minWidth": 40,
+            "cellOptions": {
+              "type": "color-background",
+              "mode": "gradient"
+            }
+          },
+          "mappings": [
+            {
+              "type": "value",
+              "options": {
+                "0": {
+                  "text": " "
+                }
+              }
+            }
+          ]
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Day"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 70
+              },
+              {
+                "id": "custom.cellOptions",
+                "value": {
+                  "type": "auto"
+                }
+              },
+              {
+                "id": "custom.align",
+                "value": "left"
+              }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "showHeader": true,
+        "cellHeight": "md",
+        "footer": {
+          "show": false
+        }
+      }
+    },
+    {
+      "id": 9,
+      "type": "timeseries",
+      "title": "Hours per $bucket by account",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "steam-playtime"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 4,
+        "w": 12,
+        "h": 9
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "steam-playtime"
+          },
+          "editorMode": "code",
+          "format": "time_series",
+          "rawQuery": true,
+          "rawSql": "SELECT date_trunc('$bucket', at AT TIME ZONE (SELECT timezone FROM settings)) AT TIME ZONE (SELECT timezone FROM settings) AS time, account AS metric, round(sum(seconds) / 3600.0, 2) AS value FROM v_playtime WHERE $__timeFilter(at) AND account IN ($account) GROUP BY 1, 2 ORDER BY 1"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "fixed",
+            "fixedColor": "#d95926"
+          },
+          "unit": "suffix: h",
+          "decimals": 1,
+          "min": 0,
+          "custom": {
+            "drawStyle": "bars",
+            "barAlignment": -1,
+            "barWidthFactor": 0.8,
+            "fillOpacity": 85,
+            "lineWidth": 1,
+            "stacking": {
+              "mode": "normal",
+              "group": "A"
+            },
+            "showPoints": "never",
+            "axisSoftMin": 0,
+            "gradientMode": "none"
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Quinn"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#3987e5"
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      }
+    },
+    {
+      "id": 10,
+      "type": "timeseries",
+      "title": "Hours per $bucket by device",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "steam-playtime"
+      },
+      "gridPos": {
+        "x": 12,
+        "y": 4,
+        "w": 12,
+        "h": 9
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "steam-playtime"
+          },
+          "editorMode": "code",
+          "format": "time_series",
+          "rawQuery": true,
+          "rawSql": "SELECT date_trunc('$bucket', at AT TIME ZONE (SELECT timezone FROM settings)) AT TIME ZONE (SELECT timezone FROM settings) AS time, device AS metric, round(sum(seconds) / 3600.0, 2) AS value FROM v_playtime WHERE $__timeFilter(at) AND account IN ($account) GROUP BY 1, 2 ORDER BY 1"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "fixed",
+            "fixedColor": "#c98500"
+          },
+          "unit": "suffix: h",
+          "decimals": 1,
+          "min": 0,
+          "custom": {
+            "drawStyle": "bars",
+            "barAlignment": -1,
+            "barWidthFactor": 0.8,
+            "fillOpacity": 85,
+            "lineWidth": 1,
+            "stacking": {
+              "mode": "normal",
+              "group": "A"
+            },
+            "showPoints": "never",
+            "axisSoftMin": 0,
+            "gradientMode": "none"
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "pc"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#199e70"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "deck"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#9085e9"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "other"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#c98500"
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      }
+    },
+    {
+      "id": 11,
+      "type": "barchart",
+      "title": "Average hours played per weekday",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "steam-playtime"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 13,
+        "w": 12,
+        "h": 8
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "steam-playtime"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "WITH days AS (SELECT d::date AS day FROM generate_series(($__timeFrom() AT TIME ZONE (SELECT timezone FROM settings))::date, ($__timeTo() AT TIME ZONE (SELECT timezone FROM settings))::date, interval '1 day') d), accounts AS (SELECT DISTINCT account FROM v_sessions WHERE account IN ($account) AND $__timeFilter(started_at)), played AS (SELECT * FROM v_session_hours WHERE $__timeFilter(hour) AND account IN ($account)), weekdays AS (SELECT EXTRACT(ISODOW FROM day)::int AS dow, count(*) AS n FROM days GROUP BY 1) SELECT w.label AS bucket, a.account, COALESCE(sum(p.seconds), 0) / 3600.0 / n.n AS value FROM (VALUES (1, 'Mon'), (2, 'Tue'), (3, 'Wed'), (4, 'Thu'), (5, 'Fri'), (6, 'Sat'), (7, 'Sun')) AS w (dow, label) JOIN weekdays n ON n.dow = w.dow CROSS JOIN accounts a LEFT JOIN played p ON EXTRACT(ISODOW FROM p.local_hour) = w.dow AND p.account = a.account GROUP BY w.dow, w.label, a.account, n.n ORDER BY w.dow, a.account"
+        }
+      ],
+      "description": "Tracked hours on each weekday, averaged over every such day in the range (days without play count as 0).",
+      "transformations": [
+        {
+          "id": "groupingToMatrix",
+          "options": {
+            "columnField": "account",
+            "rowField": "bucket",
+            "valueField": "value",
+            "emptyValue": "zero"
+          }
+        },
+        {
+          "id": "organize",
+          "options": {
+            "renameByName": {
+              "bucket\\account": "Day"
+            }
+          }
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "fixed",
+            "fixedColor": "#d95926"
+          },
+          "unit": "suffix: h",
+          "decimals": 1,
+          "min": 0,
+          "custom": {
+            "fillOpacity": 85,
+            "lineWidth": 0
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Quinn"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#3987e5"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Day"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "string"
+              }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "orientation": "vertical",
+        "stacking": "normal",
+        "xField": "Day",
+        "showValue": "never",
+        "barWidth": 0.8,
+        "groupWidth": 0.7,
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "none"
+        }
+      }
+    },
+    {
+      "id": 12,
+      "type": "barchart",
+      "title": "Average time played per hour of day",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "steam-playtime"
+      },
+      "gridPos": {
+        "x": 12,
+        "y": 13,
+        "w": 12,
+        "h": 8
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "steam-playtime"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "WITH days AS (SELECT d::date AS day FROM generate_series(($__timeFrom() AT TIME ZONE (SELECT timezone FROM settings))::date, ($__timeTo() AT TIME ZONE (SELECT timezone FROM settings))::date, interval '1 day') d), accounts AS (SELECT DISTINCT account FROM v_sessions WHERE account IN ($account) AND $__timeFilter(started_at)), played AS (SELECT * FROM v_session_hours WHERE $__timeFilter(hour) AND account IN ($account)) SELECT h.label AS bucket, a.account, COALESCE(sum(p.seconds), 0) / 60.0 / (SELECT count(*) FROM days) AS value FROM (VALUES (0, '00'), (1, '01'), (2, '02'), (3, '03'), (4, '04'), (5, '05'), (6, '06'), (7, '07'), (8, '08'), (9, '09'), (10, '10'), (11, '11'), (12, '12'), (13, '13'), (14, '14'), (15, '15'), (16, '16'), (17, '17'), (18, '18'), (19, '19'), (20, '20'), (21, '21'), (22, '22'), (23, '23')) AS h (hour, label) CROSS JOIN accounts a LEFT JOIN played p ON EXTRACT(HOUR FROM p.local_hour) = h.hour AND p.account = a.account GROUP BY h.hour, h.label, a.account ORDER BY h.hour, a.account"
+        }
+      ],
+      "description": "Minutes of tracked play in each clock hour (local time) on an average day in the range - e.g. 21 = 21:00 to 22:00. Days without play count as 0.",
+      "transformations": [
+        {
+          "id": "groupingToMatrix",
+          "options": {
+            "columnField": "account",
+            "rowField": "bucket",
+            "valueField": "value",
+            "emptyValue": "zero"
+          }
+        },
+        {
+          "id": "organize",
+          "options": {
+            "renameByName": {
+              "bucket\\account": "Hour"
+            }
+          }
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "fixed",
+            "fixedColor": "#d95926"
+          },
+          "unit": "m",
+          "decimals": 0,
+          "min": 0,
+          "custom": {
+            "fillOpacity": 85,
+            "lineWidth": 0
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Quinn"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#3987e5"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Hour"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "string"
+              }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "orientation": "vertical",
+        "stacking": "normal",
+        "xField": "Hour",
+        "showValue": "never",
+        "barWidth": 0.8,
+        "groupWidth": 0.7,
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "none"
+        }
+      }
+    },
+    {
+      "id": 13,
+      "type": "barchart",
+      "title": "Top games",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "steam-playtime"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 21,
+        "w": 12,
+        "h": 12
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "steam-playtime"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "WITH top AS (SELECT app_id FROM v_playtime WHERE $__timeFilter(at) AND account IN ($account) GROUP BY app_id ORDER BY sum(seconds) DESC LIMIT 15) SELECT p.game, p.account, round(sum(p.seconds) / 3600.0, 1) AS hours FROM v_playtime p JOIN top USING (app_id) WHERE $__timeFilter(p.at) AND p.account IN ($account) GROUP BY 1, 2"
+        }
+      ],
+      "transformations": [
+        {
+          "id": "groupingToMatrix",
+          "options": {
+            "columnField": "account",
+            "rowField": "game",
+            "valueField": "hours",
+            "emptyValue": "zero"
+          }
+        },
+        {
+          "id": "calculateField",
+          "options": {
+            "mode": "reduceRow",
+            "reduce": {
+              "reducer": "sum"
+            },
+            "alias": "Total"
+          }
+        },
+        {
+          "id": "sortBy",
+          "options": {
+            "sort": [
+              {
+                "field": "Total",
+                "desc": true
+              }
+            ]
+          }
+        },
+        {
+          "id": "organize",
+          "options": {
+            "excludeByName": {
+              "Total": true
+            },
+            "renameByName": {
+              "game\\account": "Game"
+            }
+          }
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "fixed",
+            "fixedColor": "#d95926"
+          },
+          "unit": "suffix: h",
+          "decimals": 1,
+          "min": 0,
+          "custom": {
+            "fillOpacity": 85,
+            "lineWidth": 0
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Quinn"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#3987e5"
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "orientation": "horizontal",
+        "stacking": "normal",
+        "xField": "Game",
+        "showValue": "never",
+        "barWidth": 0.8,
+        "groupWidth": 0.7,
+        "xTickLabelMaxLength": 32,
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      }
+    },
+    {
+      "id": 14,
+      "type": "bargauge",
+      "title": "Hours by account",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "steam-playtime"
+      },
+      "gridPos": {
+        "x": 12,
+        "y": 21,
+        "w": 6,
+        "h": 6
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "steam-playtime"
+          },
+          "editorMode": "code",
+          "format": "time_series",
+          "rawQuery": true,
+          "rawSql": "SELECT now() AS time, account AS metric, round(sum(seconds) / 3600.0, 1) AS value FROM v_playtime WHERE $__timeFilter(at) AND account IN ($account) GROUP BY 2 ORDER BY 3 DESC"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "fixed",
+            "fixedColor": "#d95926"
+          },
+          "unit": "suffix: h",
+          "decimals": 1,
+          "min": 0
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Quinn"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#3987e5"
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "orientation": "horizontal",
+        "displayMode": "basic",
+        "showUnfilled": true,
+        "namePlacement": "top",
+        "valueMode": "text",
+        "minVizHeight": 16,
+        "minVizWidth": 8,
+        "sizing": "auto",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        }
+      }
+    },
+    {
+      "id": 15,
+      "type": "bargauge",
+      "title": "Hours by device",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "steam-playtime"
+      },
+      "gridPos": {
+        "x": 18,
+        "y": 21,
+        "w": 6,
+        "h": 6
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "steam-playtime"
+          },
+          "editorMode": "code",
+          "format": "time_series",
+          "rawQuery": true,
+          "rawSql": "SELECT now() AS time, device AS metric, round(sum(seconds) / 3600.0, 1) AS value FROM v_playtime WHERE $__timeFilter(at) AND account IN ($account) GROUP BY 2 ORDER BY 3 DESC"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "fixed",
+            "fixedColor": "#c98500"
+          },
+          "unit": "suffix: h",
+          "decimals": 1,
+          "min": 0
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "pc"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#199e70"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "deck"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#9085e9"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "other"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#c98500"
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "orientation": "horizontal",
+        "displayMode": "basic",
+        "showUnfilled": true,
+        "namePlacement": "top",
+        "valueMode": "text",
+        "minVizHeight": 16,
+        "minVizWidth": 8,
+        "sizing": "auto",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        }
+      },
+      "description": "\"other\": playtime Steam counted that no agent recorded (another device, or before tracking)."
+    },
+    {
+      "id": 16,
+      "type": "table",
+      "title": "Devices",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "steam-playtime"
+      },
+      "gridPos": {
+        "x": 12,
+        "y": 27,
+        "w": 12,
+        "h": 6
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "steam-playtime"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT d.name AS \"Device\", d.last_seen_at AS \"Last contact\", (SELECT max(ended_at) FROM sessions s WHERE s.device = d.name) AS \"Latest session\", (SELECT count(*) FROM sessions s WHERE s.device = d.name) AS \"Sessions\" FROM devices d ORDER BY d.name"
+        }
+      ],
+      "description": "When each agent last reached the server. The Deck queues sessions while away and uploads them when it's back on the home network.",
+      "fieldConfig": {
+        "defaults": {
+          "unit": "none"
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byType",
+              "options": "time"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "dateTimeFromNow"
+              }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "showHeader": true,
+        "cellHeight": "sm"
+      }
+    },
+    {
+      "id": 17,
+      "type": "table",
+      "title": "Longest sessions",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "steam-playtime"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 33,
+        "w": 12,
+        "h": 10
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "steam-playtime"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT started_at AS \"Started\", account AS \"Account\", device AS \"Device\", game AS \"Game\", seconds / 3600.0 AS \"Hours\" FROM v_sessions WHERE $__timeFilter(started_at) AND account IN ($account) ORDER BY seconds DESC LIMIT 25"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "none"
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Hours"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "suffix: h"
+              },
+              {
+                "id": "decimals",
+                "value": 1
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Started"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "time: YYYY-MM-DD HH:mm"
+              },
+              {
+                "id": "custom.width",
+                "value": 135
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Account"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 115
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Device"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 70
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Hours"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 70
+              }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "showHeader": true,
+        "cellHeight": "sm"
+      }
+    },
+    {
+      "id": 18,
+      "type": "table",
+      "title": "Recent sessions",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "steam-playtime"
+      },
+      "gridPos": {
+        "x": 12,
+        "y": 33,
+        "w": 12,
+        "h": 10
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "steam-playtime"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT started_at AS \"Started\", account AS \"Account\", device AS \"Device\", game AS \"Game\", seconds / 3600.0 AS \"Hours\" FROM v_sessions WHERE $__timeFilter(started_at) AND account IN ($account) ORDER BY started_at DESC LIMIT 50"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "none"
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Hours"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "suffix: h"
+              },
+              {
+                "id": "decimals",
+                "value": 1
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Started"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "time: YYYY-MM-DD HH:mm"
+              },
+              {
+                "id": "custom.width",
+                "value": 135
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Account"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 115
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Device"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 70
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Hours"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 70
+              }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "showHeader": true,
+        "cellHeight": "sm"
+      }
+    },
+    {
+      "id": 19,
+      "type": "table",
+      "title": "Lifetime playtime (Steam's totals)",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "steam-playtime"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 43,
+        "w": 24,
+        "h": 10
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "steam-playtime"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT account AS \"Account\", game AS \"Game\", playtime_minutes / 60.0 AS \"Lifetime hours\", last_played AS \"Last played\" FROM v_lifetime_totals WHERE account IN ($account) ORDER BY playtime_minutes DESC"
+        }
+      ],
+      "description": "Steam's own lifetime totals, including everything before tracking began. Not limited by the time range.",
+      "fieldConfig": {
+        "defaults": {
+          "unit": "none"
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Lifetime hours"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "suffix: h"
+              },
+              {
+                "id": "decimals",
+                "value": 1
+              },
+              {
+                "id": "custom.cellOptions",
+                "value": {
+                  "type": "gauge",
+                  "mode": "basic",
+                  "valueDisplayMode": "text"
+                }
+              },
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#3987e5"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Last played"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "time: YYYY-MM-DD"
+              }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "showHeader": true,
+        "cellHeight": "sm"
+      }
+    }
+  ]
+}

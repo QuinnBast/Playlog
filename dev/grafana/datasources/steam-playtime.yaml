@@ -1,0 +1,10 @@
+# The Grafana datasource the dashboards expect (uid steam-playtime), pointing at the compose Postgres.
+apiVersion: 1
+datasources:
+  - name: Steam playtime
+    type: grafana-postgresql-datasource
+    uid: steam-playtime
+    url: postgres:5432
+    user: grafana
+    jsonData: { database: playtime, sslmode: disable, postgresVersion: 1700 }
+    secureJsonData: { password: grafana }

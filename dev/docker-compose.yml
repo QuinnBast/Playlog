@@ -1,0 +1,50 @@
+# Local preview of the whole server side: Postgres + the playtime server + Grafana with the dashboard.
+#   docker compose -f dev/docker-compose.yml up -d --build
+#   Grafana: http://localhost:3000 (no login)   Server: http://localhost:8080/healthz, /metrics
+# The agent can upload here with token "dev-pc-token-0123456789" (device pc) or "dev-deck-token-0123456789" (deck).
+# Everything is thrown away with: docker compose -f dev/docker-compose.yml down -v
+name: steam-playtime-dev
+
+services:
+  postgres:
+    image: postgres:17
+    environment:
+      POSTGRES_USER: playtime
+      POSTGRES_PASSWORD: playtime
+      POSTGRES_DB: playtime
+    ports: ["127.0.0.1:5433:5432"]
+    volumes: [db:/var/lib/postgresql/data]
+    healthcheck:
+      test: ["CMD", "pg_isready", "-U", "playtime", "-d", "playtime"]
+      interval: 2s
+      retries: 30
+
+  server:
+    build: ..
+    environment:
+      TZ: ${TZ:-UTC}                       # your time zone for days and hours, e.g. TZ=Europe/Berlin
+      DATABASE_URL: postgresql://playtime:playtime@postgres:5432/playtime
+      DEVICE_TOKENS: pc=dev-pc-token-0123456789,deck=dev-deck-token-0123456789
+      # Steam account IDs -> names; seed_demo.py prints yours. 12345 is its made-up second account.
+      ACCOUNTS: ${ACCOUNTS:-12345=Sample partner}
+      GRAFANA_DB_PASSWORD: grafana
+    ports: ["127.0.0.1:8080:8080"]
+    depends_on:
+      postgres: { condition: service_healthy }
+
+  grafana:
+    image: grafana/grafana:13.2.3
+    environment:
+      GF_AUTH_ANONYMOUS_ENABLED: "true"
+      GF_AUTH_ANONYMOUS_ORG_ROLE: Admin
+      GF_AUTH_DISABLE_LOGIN_FORM: "true"
+      GF_DASHBOARDS_DEFAULT_HOME_DASHBOARD_PATH: /var/lib/grafana/dashboards/steam-playtime.json
+    ports: ["127.0.0.1:3000:3000"]
+    volumes:
+      - ./grafana/datasources:/etc/grafana/provisioning/datasources:ro
+      - ./grafana/dashboards:/etc/grafana/provisioning/dashboards:ro
+      - ../dashboards:/var/lib/grafana/dashboards:ro
+    depends_on: [server]
+
+volumes:
+  db:

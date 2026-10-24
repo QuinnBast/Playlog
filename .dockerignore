@@ -1,0 +1,4 @@
+*
+!requirements.txt
+!playtime_server/
+**/__pycache__

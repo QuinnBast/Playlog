@@ -1,0 +1,21 @@
+"Registry"
+{
+	"HKCU"
+	{
+		"Software"
+		{
+			"Valve"
+			{
+				"Steam"
+				{
+					"RunningAppID"		"1145360"
+					"ActiveProcess"
+					{
+						"pid"		"1234"
+						"ActiveUser"		"222"
+					}
+				}
+			}
+		}
+	}
+}

@@ -1,0 +1,37 @@
+"UserLocalConfigStore"
+{
+	"streaming_v2"
+	{
+		"DefaultAudioDeviceName"		"Headphones"
+	}
+	"Software"
+	{
+		"Valve"
+		{
+			"steam"
+			{
+				"apps"
+				{
+					"7"
+					{
+						"cloud"
+						{
+							"last_sync_state"		"synchronized"
+						}
+					}
+					"400"
+					{
+						"LastPlayed"		"1682304246"
+						"Playtime"		"638"
+					}
+					"252950"
+					{
+						"LastPlayed"		"1792000000"
+						"Playtime"		"159180"
+						"Playtime2wks"		"300"
+					}
+				}
+			}
+		}
+	}
+}

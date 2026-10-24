@@ -1,0 +1,11 @@
+__pycache__/
+.venv/
+.idea/
+# An agent config holds that device's upload token.
+config.json
+# AI-assistant notes, briefs and working files: kept locally, never committed.
+docs/
+CLAUDE.md
+CLAUDE.local.md
+.claude/
+*.ai.md

@@ -1,0 +1,16 @@
+# systemd user service for the playtime agent (installed by install.sh to ~/.config/systemd/user/).
+# Runs in Desktop and Gaming Mode alike: both are the same user session.
+[Unit]
+Description=Steam playtime agent (records play sessions, uploads to the playtime server)
+
+[Service]
+WorkingDirectory=%h/.local/share/steam-playtime/app
+ExecStart=/usr/bin/python3 -m playtime_agent
+Restart=always
+RestartSec=60
+# Tiny and idle 99% of the time; keep it out of the game's way.
+Nice=10
+IOSchedulingClass=idle
+
+[Install]
+WantedBy=default.target
