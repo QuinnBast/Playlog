@@ -1,37 +1,37 @@
-# Playlog: Steam playtime tracker
+# Playlog: Open-Source Personal Steam playtime tracker
 
-Records every Steam session on your Windows PC and Steam Deck, for every account signed in there, and keeps the full
-history in Postgres, with Grafana dashboards. Steam itself only keeps lifetime totals, and its Web API returns nothing
-for private profiles, so nothing here talks to Steam's servers: an agent on each device reads Steam's local state once
-a minute.
+Playtime is an open-source self-hostable tool that allows you to track every Steam session on your Windows PC and Steam Deck, for every account.
+The self-hosted server keeps track of your play history in Postgres and there are included Grafana dashboards for viewing your stats.
+
+Two daemon applications exist, one for Windows, one for Steam Deck (linux). The Daemon processes activate on system startup
+and watch for playtime. Once a session has been tracked, the daemons attempt to upload to your configured server URL.
+
+Not online? No problem! The daemon footprint is small. It will keep playtime sessions locally until you're back online and upload all previous
+sessions once you're able to connect to your local server.
+
+Nothing here talks to Steam's servers, everything runs entirely locally.
 
 ```
- PC (Task Scheduler, pythonw)  ─┐   POST /api/v1/sync    (sessions + what's playing now)
+ PC (Task Scheduler, pythonw)  ─┐   POST /api/v1/sync
                                 ├──────────────────────▶  playtime server ──▶ Postgres ◀── Grafana (dashboard)
- Deck (systemd user service)  ──┘   POST /api/v1/totals  (lifetime totals, daily)   └── /metrics ◀── Prometheus
+ Deck (systemd user service)  ──┘   POST /api/v1/totals            └── /metrics ◀── Prometheus
 ```
 
-| Path | What |
-|---|---|
-| `playtime_agent/` | The agent, standard library only (same code on Windows and the Deck) |
-| `playtime_server/` | FastAPI server: uploads, game names, untracked-time catch-up, `/metrics`; SQL migrations |
-| `dashboards/` | Grafana dashboards: "Steam playtime" (overview, heatmaps) and "Steam sessions" (every session on a timeline) |
-| `install/windows/`, `install/deck/` | Agent install scripts |
-| `tests/` | `python -m unittest discover -s tests` |
+# Get started
+
+## [Deploy the Server](#deploying-the-server)
+
+## [Install an agent](#installing-the-agents)
 
 ## How it works
 
-- **Sessions.** Every 60 s the agent reads the signed-in account and running game (Windows: registry
-  `HKCU\Software\Valve\Steam`, `RunningAppID` and `ActiveProcess\ActiveUser`; Deck: `~/.steam/registry.vdf`, and the
-  game's `SteamLaunch AppId=` process). One record per session; a gap over 3 minutes (sleep) ends it. Finished sessions
-  wait in a small SQLite queue until the server confirms them, so the Deck can be offline for months.
-- **Lifetime totals.** Once a day the agent sends each account's `userdata/<id>/config/localconfig.vdf` playtimes
-  (only changes are stored), plus names of installed games. The first upload imports the history up to now.
-- **Untracked time.** When a lifetime total grows more than the tracked sessions explain, the difference is shown as
-  device "other" (another device, or before the agent existed). Recomputed after every upload, so Deck sessions that
-  arrive months later take that time back. Totals sync across devices and are never added together.
+- **Sessions.** Every 60 s the agent reads the signed-in Steam account and running game.
+  - Windows reads registry `HKCU\Software\Valve\Steam`, `RunningAppID` and `ActiveProcess\ActiveUser`.
+  - Deck: reads `~/.steam/registry.vdf`, and the game's `SteamLaunch AppId=` process.
+  - Finished sessions wait in a small SQLite queue until the server confirms them, so the Deck can be offline for months.
+- **Lifetime totals.** The first time you run, it uploads your steam lifetime totals for each game to the server to build on.
 - **Game names** come from installed games' manifests, otherwise from the public Steam store page (cached).
-- **Account names** come from the server's `ACCOUNTS` setting.
+- **Account names** are defined by you, configure in the server's `ACCOUNTS` setting.
 
 ## Development
 
@@ -54,7 +54,12 @@ skipped. CI runs them against `postgres:17`.
 
 ## Deploying the server
 
-The server is the container built by the `Dockerfile` (it listens on port 8080 and creates its tables on start):
+I do not have a DockerHub account and have no registry to host container builds at.
+So to get the server, you will need to build the container yourself (sorry).
+
+The server is the container built by the `Dockerfile` at the root of this repo (it listens on port 8080 and creates its Postgres tables on start).
+Build the container with:
+
 ```bash
 docker build -t playlog-server:0.2.0 .
 ```
@@ -68,37 +73,45 @@ Run it next to a Postgres 17 database with these environment variables (see `pla
 | `TZ` | `Europe/Berlin` | days and hours on the dashboards (default UTC) |
 | `GRAFANA_DB_PASSWORD` | `<random>` | optional: creates a read-only `grafana` role for the datasource |
 
-Put it behind HTTPS reachable from your devices (the agents need `/api/v1/*`; `/metrics` is for Prometheus). For the
-dashboards, add a Grafana **PostgreSQL** datasource with uid `steam-playtime` (user `grafana`, database `playtime`) and
-import `dashboards/*.json`; `dev/` shows a complete example with Docker Compose. In `dashboards/build.py`,
-`PRIMARY_ACCOUNT` is the account name shown in the first color.
+`DEVICE_TOKENS` are secret tokens that the server will only accept. The server requires a token on request, and maps the token to a device.
+Treat these like API keys.
+
+Once running, ensure it is reachable on your network so that the agents can reach it.
+
+For the dashboards, add a Grafana **PostgreSQL** datasource with uid `steam-playtime` (user `grafana`, database `playtime`).
+Then import `dashboards/*.json`.
+
+The `dev/` folder shows a complete example using Docker Compose.
+In `dashboards/build.py`, `PRIMARY_ACCOUNT` is the account name shown in the first color.
 
 ## Installing the agents
 
-**PC** (no admin; Python 3.10+ from python.org on PATH), from this repo:
+**PC** (Python 3.10+ required)
+
+Install on PC by running the following command:
 ```powershell
 powershell -ExecutionPolicy Bypass -File install\windows\install.ps1 -ServerUrl https://<your server> -Token <pc token>
 ```
-The agent runs hidden at every logon (Task Scheduler: "Steam Playtime Agent"). Its log is
-`%LOCALAPPDATA%\SteamPlaytime\agent.log`. To update, re-run the script. `-Uninstall` removes it.
+Once executed, the daemon will run automatically at every logon.
+You can view (or cancel) the process under Task Scheduler: "Steam Playtime Agent".
+Its log is found at `%LOCALAPPDATA%\SteamPlaytime\agent.log`.
+To update, re-run the script. `-Uninstall` removes it.
 
-**Steam Deck** (Desktop Mode, Konsole; nothing to install, since SteamOS ships `python3`):
+**Steam Deck** (Requires Desktop Mode via Konsole):
+
+Run the following commands on your Steam Deck:
+
 ```bash
 git clone https://github.com/QuinnBast/Playlog.git ~/steam-playtime-src   # or copy the folder over
 ~/steam-playtime-src/install/deck/install.sh --server https://<your server> --token <deck token>
 ```
-It runs as a systemd user service in both Desktop and Gaming Mode, and survives SteamOS updates because it lives in
-the home folder. Check it with `systemctl --user status steam-playtime`. The log is
-`~/.local/share/steam-playtime/agent.log`.
-To update: `git -C ~/steam-playtime-src pull` and re-run `install.sh` (no server or token needed the second time).
 
-Before relying on the Deck data, play something for a few minutes and check that the session shows up. Steam may be
-slow to rewrite `registry.vdf`, which is why the game's process is checked too.
+It runs as a systemd user service in both Desktop and Gaming Mode, and survives SteamOS updates because it lives in  the home folder.
+Check its process with `systemctl --user status steam-playtime`.
+The log is located at `~/.local/share/steam-playtime/agent.log`.
+To update: `git -C ~/steam-playtime-src pull` and re-run `install.sh` (no server or token needed the second time).
 
 ## Notes
 
-- The agent records whichever Steam account is signed in, so let anyone else who uses the device know before it
-  goes live.
-- "Owned but never played" isn't possible offline: Steam keeps no readable list of owned games locally, and the
-  Steam Web API won't return one for a private profile. The lifetime table lists every game that has playtime.
-- Non-Steam games are ignored.
+- The agent records any Steam account that is signed in.
+- Non-Steam games are ignored (for now?).
